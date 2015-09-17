@@ -198,7 +198,7 @@ class AsyncTCPPubChannel(salt.transport.mixins.auth.AESPubClientMixin, salt.tran
 
         self.serial = salt.payload.Serial(self.opts)
 
-        self.io_loop = kwargs['io_loop'] or tornado.ioloop.IOLoop.current()
+        self.io_loop = kwargs.get('io_loop') or tornado.ioloop.IOLoop.current()
         self.connected = False
         self._closing = False
 

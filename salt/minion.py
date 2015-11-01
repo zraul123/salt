@@ -2632,7 +2632,7 @@ class ProxyMinion(Minion):
             self.returners)
 
         # add default scheduling jobs to the minions scheduler
-        if 'mine.update' in self.functions:
+        if self.opts.get('mine_enabled', True) and 'mine.update' in self.functions:
             log.info('Added mine.update to scheduler')
             self.schedule.add_job({
                 '__mine_interval':
@@ -2640,7 +2640,8 @@ class ProxyMinion(Minion):
                         'function': 'mine.update',
                         'minutes': self.opts['mine_interval'],
                         'jid_include': True,
-                        'maxrunning': 2
+                        'maxrunning': 2,
+                        'return_job': self.opts.get('mine_return_job', False)
                     }
             }, persist=True)
 

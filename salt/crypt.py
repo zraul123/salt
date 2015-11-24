@@ -12,6 +12,7 @@ import time
 import hmac
 import hashlib
 import logging
+import stat
 import traceback
 import binascii
 import weakref
@@ -56,6 +57,8 @@ def dropfile(cachedir, user=None):
     try:
         log.info('Rotating AES key')
 
+        if salt.utils.is_windows() and not os.access(dfn, os.W_OK):
+            os.chmod(dfn, stat.S_IWUSR)
         with salt.utils.fopen(dfn, 'wb+') as fp_:
             fp_.write('')
         if user:

@@ -23,6 +23,7 @@ import socket
 import logging
 import logging.handlers
 import traceback
+import multiprocessing
 
 # Import 3rd-party libs
 import salt.ext.six as six
@@ -99,6 +100,7 @@ __CONSOLE_CONFIGURED = False
 __LOGFILE_CONFIGURED = False
 __TEMP_LOGGING_CONFIGURED = False
 __EXTERNAL_LOGGERS_CONFIGURED = False
+__MP_IN_MAINPROCESS = multiprocessing.current_process().name == 'MainProcess'
 
 
 def is_console_configured():
@@ -326,30 +328,6 @@ class SaltLoggingClass(six.with_metaclass(LoggingMixInMeta, LOGGING_LOGGER_CLASS
         return logrecord
 
     # pylint: enable=C0103
-
-
-# Override the python's logging logger class as soon as this module is imported
-if logging.getLoggerClass() is not SaltLoggingClass:
-
-    logging.setLoggerClass(SaltLoggingClass)
-    logging.addLevelName(QUIET, 'QUIET')
-    logging.addLevelName(PROFILE, 'PROFILE')
-    logging.addLevelName(TRACE, 'TRACE')
-    logging.addLevelName(GARBAGE, 'GARBAGE')
-
-    if len(logging.root.handlers) == 0:
-        # No configuration to the logging system has been done so far.
-        # Set the root logger at the lowest level possible
-        logging.root.setLevel(GARBAGE)
-
-        # Add a Null logging handler until logging is configured(will be
-        # removed at a later stage) so we stop getting:
-        #   No handlers could be found for logger 'foo'
-        logging.root.addHandler(LOGGING_NULL_HANDLER)
-
-    # Add the queue logging handler so we can later sync all message records
-    # with the additional logging handlers
-    logging.root.addHandler(LOGGING_STORE_HANDLER)
 
 
 def getLogger(name):  # pylint: disable=C0103
@@ -803,6 +781,44 @@ def __global_logging_exception_handler(exc_type, exc_value, exc_traceback):
         # Call the original sys.excepthook
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
+
+# Override the python's logging logger class as soon as this module is imported
+if logging.getLoggerClass() is not SaltLoggingClass:
+
+    logging.setLoggerClass(SaltLoggingClass)
+    logging.addLevelName(QUIET, 'QUIET')
+    logging.addLevelName(PROFILE, 'PROFILE')
+    logging.addLevelName(TRACE, 'TRACE')
+    logging.addLevelName(GARBAGE, 'GARBAGE')
+
+    if len(logging.root.handlers) == 0:
+        # No configuration to the logging system has been done so far.
+        # Set the root logger at the lowest level possible
+        logging.root.setLevel(GARBAGE)
+
+        # Add a Null logging handler until logging is configured(will be
+        # removed at a later stage) so we stop getting:
+        #   No handlers could be found for logger 'foo'
+        logging.root.addHandler(LOGGING_NULL_HANDLER)
+
+    # Can't use salt.utils.is_windows() due to a circular reference
+    # issue.
+    if sys.platform.startswith('win') and not __MP_IN_MAINPROCESS:
+        # On Windows, fork does not copy the process context.
+        # Due to this, it will try to reinitialize the temp
+        # null and temp queue logging handlers. Unfortunately, nothing
+        # will replace them. So they will accumulate messages and cause
+        # big memory usage. Avoid this by calling setup_temp_logger()
+        # which will replace the temp null logging handler and set up basic
+        # console logging. Also, avoid installing the temp queue logging
+        # handler. Do this only when on Windows and not in the main
+        # process.
+        setup_temp_logger()
+        LOGGING_STORE_HANDLER = None
+    else:
+        # Add the queue logging handler so we can later sync all message
+        # records with the additional logging handlers
+        logging.root.addHandler(LOGGING_STORE_HANDLER)
 
 # Set our own exception handler as the one to use
 sys.excepthook = __global_logging_exception_handler

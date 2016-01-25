@@ -7,12 +7,14 @@ involves preparing the three listeners and the workers needed by the master.
 # Import python libs
 from __future__ import absolute_import
 import copy
+import ctypes
 import os
 import re
 import sys
 import time
 import errno
 import logging
+import multiprocessing
 import tempfile
 import multiprocessing
 import traceback
@@ -70,6 +72,7 @@ import salt.utils.zeromq
 import salt.utils.jid
 from salt.defaults import DEFAULT_TARGET_DELIM
 from salt.exceptions import FileserverConfigError
+from salt.transport import iter_transport_opts
 from salt.utils.debug import (
     enable_sigusr1_handler, enable_sigusr2_handler, inspect_stack
 )
@@ -180,6 +183,17 @@ class Maintenance(multiprocessing.Process):
         self.git_pillar = salt.daemons.masterapi.init_git_pillar(self.opts)
         # Set up search object
         self.search = salt.search.Search(self.opts)
+
+        self.presence_events = False
+        if self.opts.get('presence_events', False):
+            tcp_only = True
+            for transport, _ in iter_transport_opts(self.opts):
+                if transport != 'tcp':
+                    tcp_only = False
+            if not tcp_only:
+                # For a TCP only transport, the presence events will be
+                # handled in the transport code.
+                self.presence_events = True
 
     def run(self):
         '''
@@ -295,7 +309,7 @@ class Maintenance(multiprocessing.Process):
         '''
         Fire presence events if enabled
         '''
-        if self.opts.get('presence_events', False):
+        if self.presence_events:
             present = self.ckminions.connected_ids()
             new = present.difference(old_present)
             lost = old_present.difference(present)
@@ -445,7 +459,10 @@ class Master(SMaster):
 
     # run_reqserver cannot be defined within a class method in order for it
     # to be picklable.
-    def run_reqserver(self):
+    def run_reqserver(self, **kwargs):
+        secrets = kwargs.pop('secrets', None)
+        if secrets is not None:
+            SMaster.secrets = secrets
         reqserv = ReqServer(
             self.opts,
             self.key,
@@ -465,6 +482,14 @@ class Master(SMaster):
         enable_sigusr2_handler()
 
         self.__set_max_open_files()
+
+        # Setup the secrets here because the PubServerChannel may need
+        # them as well.
+        SMaster.secrets['aes'] = {'secret': multiprocessing.Array(ctypes.c_char,
+                                            salt.crypt.Crypticle.generate_key_string()),
+                                  'reload': salt.crypt.Crypticle.generate_key_string
+                                 }
+
         log.info('Creating master process manager')
         process_manager = salt.utils.process.ProcessManager()
         log.info('Creating master maintenance process')
@@ -515,8 +540,12 @@ class Master(SMaster):
             log.debug('Sleeping for two seconds to let concache rest')
             time.sleep(2)
 
+        kwargs = {}
+        if salt.utils.is_windows():
+            kwargs['secrets'] = SMaster.secrets
+
         log.info('Creating master request server process')
-        process_manager.add_process(self.run_reqserver)
+        process_manager.add_process(self.run_reqserver, kwargs=kwargs)
         try:
             process_manager.run()
         except KeyboardInterrupt:
@@ -545,24 +574,6 @@ class Halite(multiprocessing.Process):
         '''
         salt.utils.appendproctitle(self.__class__.__name__)
         halite.start(self.hopts)
-
-
-# TODO: move to utils??
-def iter_transport_opts(opts):
-    '''
-    Yield transport, opts for all master configured transports
-    '''
-    transports = set()
-
-    for transport, opts_overrides in six.iteritems(opts.get('transport_opts', {})):
-        t_opts = dict(opts)
-        t_opts.update(opts_overrides)
-        t_opts['transport'] = transport
-        transports.add(transport)
-        yield transport, t_opts
-
-    if opts['transport'] not in transports:
-        yield opts['transport'], opts
 
 
 class ReqServer(object):
@@ -866,6 +877,19 @@ class AESFuncs(object):
                   'communicate with the master and could not be verified'
                   .format(id_))
         return False
+
+    def verify_minion(self, id_, token):
+        '''
+        Take a minion id and a string signed with the minion private key
+        The string needs to verify as 'salt' with the minion public key
+
+        :param str id_: A minion ID
+        :param str token: A string signed with the minion private key
+
+        :rtype: bool
+        :return: Boolean indicating whether or not the token can be verified.
+        '''
+        return self.__verify_minion(id_, token)
 
     def __verify_minion_publish(self, clear_load):
         '''

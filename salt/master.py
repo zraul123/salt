@@ -13,6 +13,7 @@ import re
 import sys
 import time
 import errno
+import stat
 import logging
 import multiprocessing
 import tempfile
@@ -250,7 +251,13 @@ class Maintenance(multiprocessing.Process):
         dfn = os.path.join(self.opts['cachedir'], '.dfn')
         try:
             stats = os.stat(dfn)
-            if stats.st_mode == 0o100400:
+            # Basic Windows permissions don't distinguish between
+            # user/group/all. Check for read-only state instead.
+            if salt.utils.is_windows() and not os.access(dfn, os.W_OK):
+                to_rotate = True
+                # Cannot delete read-only files on Windows.
+                os.chmod(dfn, stat.S_IRUSR | stat.S_IWUSR)
+            elif stats.st_mode == 0o100400:
                 to_rotate = True
             else:
                 log.error('Found dropfile with incorrect permissions, ignoring...')
@@ -604,6 +611,9 @@ class ReqServer(object):
         dfn = os.path.join(self.opts['cachedir'], '.dfn')
         if os.path.isfile(dfn):
             try:
+                if salt.utils.is_windows() and not os.access(dfn, os.W_OK):
+                    # Cannot delete read-only files on Windows.
+                    os.chmod(dfn, stat.S_IRUSR | stat.S_IWUSR)
                 os.remove(dfn)
             except os.error:
                 pass

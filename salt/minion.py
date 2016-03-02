@@ -523,7 +523,7 @@ class SMinion(MinionBase):
                 or self.opts.get('use_master_when_local', False)):
             if HAS_ZMQ:
                 zmq.eventloop.ioloop.install()
-            io_loop = LOOP_CLASS()
+            io_loop = LOOP_CLASS.current()
             io_loop.run_sync(
                 lambda: self.eval_master(self.opts, failed=True)
             )
@@ -617,7 +617,7 @@ class MultiMinion(MinionBase):
 
         if HAS_ZMQ:
             zmq.eventloop.ioloop.install()
-        self.io_loop = LOOP_CLASS()
+        self.io_loop = LOOP_CLASS.current()
 
     def _spawn_minions(self):
         '''
@@ -719,7 +719,7 @@ class Minion(MinionBase):
         if io_loop is None:
             if HAS_ZMQ:
                 zmq.eventloop.ioloop.install()
-            self.io_loop = LOOP_CLASS()
+            self.io_loop = LOOP_CLASS.current()
         else:
             self.io_loop = io_loop
 

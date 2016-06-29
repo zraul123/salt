@@ -9,7 +9,6 @@ import os
 
 # Import Salt Testing Libs
 from salttesting import TestCase, skipIf
-from salttesting.helpers import ensure_in_syspath
 from salttesting.mock import (
     Mock,
     MagicMock,
@@ -19,11 +18,8 @@ from salttesting.mock import (
     NO_MOCK_REASON
 )
 
-ensure_in_syspath('../../')
-
 # Import Salt libs
 from salt.exceptions import CommandExecutionError
-from salt.ext.six.moves import configparser
 import salt.ext.six as six
 
 
@@ -441,7 +437,7 @@ class ZypperTestCase(TestCase):
 
         :return:
         '''
-        repos_cfg = configparser.ConfigParser()
+        repos_cfg = six.moves.configparser.ConfigParser()
         for cfg in ['zypper-repo-1.cfg', 'zypper-repo-2.cfg']:
             repos_cfg.readfp(six.moves.StringIO(get_test_data(cfg)))
 
@@ -649,7 +645,3 @@ class ZypperTestCase(TestCase):
             zypper.__zypper__.refreshable.xml.call.assert_called_once_with(
                 '--gpg-auto-import-keys', 'mr', '--refresh', name
             )
-
-if __name__ == '__main__':
-    from integration import run_tests
-    run_tests(ZypperTestCase, needs_daemon=False)

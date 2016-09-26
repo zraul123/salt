@@ -414,6 +414,10 @@ class InstallCompiledPyYaml(Command):
         if getattr(self.distribution, 'salt_installing_pyyaml_windows', None) is None:
             print('This command is not meant to be called on it\'s own')
             exit(1)
+        if IS_PY3:
+            log.info('Installing PyYAML on Windows Python 3 is not yet supported.\n'
+                        'Please install PyYAML manually.')
+            return
         import platform
         from pip.utils import call_subprocess
         from pip.utils.logging import indent_log

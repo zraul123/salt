@@ -512,6 +512,7 @@ class MinionBase(object):
 
         tries = opts.get('master_tries', 1)
         attempts = 0
+        resolve_dns_fallback = opts.get('resolve_dns_fallback', False)
 
         # if we have a list of masters, loop through them and be
         # happy with the first one that allows us to connect
@@ -550,7 +551,14 @@ class MinionBase(object):
                 for master in opts['local_masters']:
                     opts['master'] = master
                     opts.update(prep_ip_port(opts))
-                    opts.update(resolve_dns(opts))
+                    try:
+                        opts.update(resolve_dns(opts, fallback=resolve_dns_fallback))
+                    except SaltClientError as exc:
+                        last_exc = exc
+                        msg = ('Master hostname: \'{0}\' not found. Trying '
+                               'next master (if any)'.format(opts['master']))
+                        log.info(msg)
+                        continue
 
                     # on first run, update self.opts with the whole master list
                     # to enable a minion to re-use old masters if they get fixed
@@ -606,8 +614,8 @@ class MinionBase(object):
                               '(infinite attempts)'.format(attempts)
                     )
                 opts.update(prep_ip_port(opts))
-                opts.update(resolve_dns(opts))
                 try:
+                    opts.update(resolve_dns(opts, fallback=resolve_dns_fallback))
                     if self.opts['transport'] == 'detect':
                         self.opts['detect_mode'] = True
                         for trans in ('zeromq', 'tcp'):

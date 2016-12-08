@@ -952,6 +952,14 @@ VALID_OPTS = {
     # django auth
     'django_auth_path': str,
     'django_auth_settings': str,
+
+    # Controls how a multi-function job returns its data. If this is False,
+    # it will return its data using a dictionary with the function name as
+    # the key. This is compatible with legacy systems. If this is True, it
+    # will return its data using an array in the same order as the input
+    # array of functions to execute. This allows for calling the same
+    # function multiple times in the same multi-function job.
+    'multifunc_ordered': bool,
 }
 
 # default configurations
@@ -1195,6 +1203,7 @@ DEFAULT_MINION_OPTS = {
     'minion_jid_queue_hwm': 100,
     'ssl': None,
     'cache': 'localfs',
+    'multifunc_ordered': False,
 }
 
 DEFAULT_MASTER_OPTS = {

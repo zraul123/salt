@@ -93,6 +93,8 @@ def _get_zone_sysconfig():
 
 def _get_zone_etc_localtime():
     tzfile = '/etc/localtime'
+    if 'NILinuxRT' in __grains__['os_family'] and salt.utils.which('nisafemodeversion'):
+        tzfile = '/etc/natinst/share/localtime'
     tzdir = '/usr/share/zoneinfo/'
     tzdir_len = len(tzdir)
     try:
@@ -274,7 +276,9 @@ def set_zone(timezone):
     if not os.path.exists(zonepath) and 'AIX' not in __grains__['os_family']:
         return 'Zone does not exist: {0}'.format(zonepath)
 
-    if os.path.exists('/etc/localtime'):
+    if 'NILinuxRT' in __grains__['os_family'] and salt.utils.which('nisafemodeversion'):
+        os.unlink('/etc/natinst/share/localtime')
+    elif os.path.exists('/etc/localtime'):
         os.unlink('/etc/localtime')
 
     if 'Solaris' in __grains__['os_family']:
@@ -292,6 +296,8 @@ def set_zone(timezone):
         cmd = ['chtz', curtzstring]
         __salt__['cmd.retcode'](cmd, python_shell=False)
         return False
+    elif 'NILinuxRT' in __grains__['os_family'] and salt.utils.which('nisafemodeversion'):
+        os.symlink(zonepath, '/etc/natinst/share/localtime')
     else:
         os.symlink(zonepath, '/etc/localtime')
 

@@ -8,6 +8,7 @@ The networking module for NI Linux Real-Time distro
 from __future__ import absolute_import
 import logging
 import time
+import os
 
 
 log = logging.getLogger(__name__)
@@ -17,9 +18,12 @@ import salt.utils
 import salt.utils.validate.net
 import salt.exceptions
 # Import third party libs
-import pyconnman
-import dbus
-
+try:
+    import pyconnman
+    import dbus
+    HAS_DEPENDENCIES = True
+except ImportError:
+    HAS_DEPENDENCIES = False
 
 # Define the module's virtual name
 __virtualname__ = 'ip'
@@ -33,14 +37,26 @@ def __virtual__():
     Confine this module to NI Linux Real-Time based distros
     '''
     if __grains__['os_family'] == 'NILinuxRT':
-        try:
-            state = _get_state
-            if state == 'offline':
-                return False, 'Connmand is not running'
-        except Exception as exc:
-            return False, str(exc)
+        if not _is_older_nilrt():
+            if not HAS_DEPENDENCIES:
+                return False, 'Could not import python modules pyconnman or dbus'
+            try:
+                state = _get_state
+                if state == 'offline':
+                    return False, 'Connmand is not running'
+            except Exception as exc:
+                return False, str(exc)
         return __virtualname__
     return False, 'The nilrt_ip module could not be loaded: unsupported OS family'
+
+
+def _is_older_nilrt():
+    '''
+    If this is an older version of NILinuxRT, return True. Otherwise, return False.
+    '''
+    if os.path.exists('/usr/local/natinst/bin/nisafemodeversion'):
+        return True
+    return False
 
 
 def _get_state():
@@ -186,6 +202,77 @@ def _get_service_info(service):
     return data
 
 
+def _get_dns_info():
+    '''
+    return dns list
+    '''
+    dnsList = []
+    try:
+        with salt.utils.fopen('/etc/resolv.conf', 'r+') as dns_info:
+            lines = dns_info.readlines()
+            for line in lines:
+                if 'nameserver' in line:
+                    dns = line.split()[1].strip()
+                    if dns not in dnsList:
+                        dnsList.append(dns)
+    except IOError:
+        log.warning('Could not get domain\n')
+    return dnsList
+
+
+def _get_requestmode_info(interface):
+    '''
+    return requestmode for given interface
+    '''
+    ifacemod = __salt__['cmd.run']('nirtcfg -l').lower()
+    if '[{0}]dhcpenabled=1'.format(interface) in ifacemod:
+        if '[{0}]linklocalenabled=1'.format(interface) in ifacemod:
+            return 'dhcp_linklocal'
+        else:
+            return 'dhcp_only'
+    elif '[{0}]dhcpenabled=0'.format(interface) in ifacemod:
+        if '[{0}]linklocalenabled=1'.format(interface) in ifacemod:
+            return 'linklocal_only'
+        elif '[{0}]linklocalenabled=0'.format(interface) in ifacemod:
+            return 'static'
+
+
+def _get_interface_info(interface):
+    '''
+    return details about given interface
+    '''
+    iface = __salt__['cmd.run']('ifconfig {0}'.format(interface)).strip().splitlines()
+    data = {}
+    data['label'] = interface
+    data['connectionid'] = interface
+    data['up'] = False
+    while iface:
+        line = iface.pop(0)
+        if 'HWaddr' in line:
+            data['hwaddr'] = line.split()[4].strip()
+        if 'inet addr' in line:
+            data['up'] = True
+            split_line = line.split()
+            address = split_line[1].strip()
+            gateway = split_line[2].strip()
+            netmask = split_line[3].strip()
+            data['ipv4'] = {
+                'address': address.split(':')[1].strip(),
+                'gateway': gateway.split(':')[1].strip(),
+                'netmask': netmask.split(':')[1].strip()
+            }
+            data['ipv4']['dns'] = _get_dns_info()
+            data['ipv4']['requestmode'] = _get_requestmode_info(interface)
+            data['ipv4']['supportedrequestmodes'] = [
+                    'dhcp_linklocal',
+                    'dhcp_only',
+                    'linklocal_only',
+                    'static'
+                    ]
+
+    return data
+
+
 def _dict_to_string(dictionary):
     '''
     converts a dictionary object into a list of strings
@@ -218,11 +305,18 @@ def get_interfaces_details():
 
         salt '*' ip.get_interfaces_details
     '''
+    if _is_older_nilrt():
+        _interfaces = __salt__['cmd.run']('ip link show').replace('\n ', ' ')
+        ilist = []
+        for interface in _interfaces.splitlines():
+            if 'lo:' not in interface:
+                ilist.append(_get_interface_info(interface.split()[1].strip()[:-1]))
+        interfaceList = {'interfaces': ilist}
+        return interfaceList
     services = []
     for service in _get_services():
         services.append(_get_service_info(service))
     interfaceList = {'interfaces': services}
-
     return interfaceList
 
 
@@ -240,6 +334,11 @@ def up(interface, iface_type=None):
 
         salt '*' ip.up interface-label
     '''
+    if _is_older_nilrt():
+        out = __salt__['cmd.run_all']('ip link set {0} up'.format(interface))
+        if out['retcode'] != 0:
+            raise salt.exceptions.CommandExecutionError('Couldn\'t enable interface {0}. Error: {1}'.format(interface, out['stderr']))
+        return True
     service = _interface_to_service(interface)
     if not service:
         raise salt.exceptions.CommandExecutionError('Invalid interface name: {0}'.format(interface))
@@ -284,6 +383,11 @@ def down(interface, iface_type=None):
 
         salt '*' ip.down interface-label
     '''
+    if _is_older_nilrt():
+        out = __salt__['cmd.run_all']('ip link set {0} down'.format(interface))
+        if out['retcode'] != 0:
+            raise salt.exceptions.CommandExecutionError('Couldn\'t disable interface {0}. Error: {1}'.format(interface, out['stderr']))
+        return True
     service = _interface_to_service(interface)
     if not service:
         raise salt.exceptions.CommandExecutionError('Invalid interface name: {0}'.format(interface))
@@ -328,6 +432,8 @@ def set_dhcp_linklocal_all(interface):
 
         salt '*' ip.dhcp_linklocal_all interface-label
     '''
+    if _is_older_nilrt():
+        raise salt.exceptions.CommandExecutionError('Not supported in this version.')
     service = _interface_to_service(interface)
     if not service:
         raise salt.exceptions.CommandExecutionError('Invalid interface name: {0}'.format(interface))
@@ -363,6 +469,8 @@ def set_static_all(interface, address, netmask, gateway, domains):
 
         salt '*' ip.dhcp_linklocal_all interface-label address netmask gateway domains
     '''
+    if _is_older_nilrt():
+        raise salt.exceptions.CommandExecutionError('Not supported in this version.')
     service = _interface_to_service(interface)
     if not service:
         raise salt.exceptions.CommandExecutionError('Invalid interface name: {0}'.format(interface))
@@ -414,6 +522,8 @@ def build_interface(iface, iface_type, enable, **settings):
     .. code-block:: bash
         salt '*' ip.build_interface eth0 eth <settings>
     '''
+    if _is_older_nilrt():
+        raise salt.exceptions.CommandExecutionError('Not supported in this version.')
     if iface_type != 'eth':
         raise salt.exceptions.CommandExecutionError('Interface type not supported: {0}:'.format(iface_type))
 
@@ -443,6 +553,8 @@ def build_network_settings(**settings):
     .. code-block:: bash
         salt '*' ip.build_network_settings <settings>
     '''
+    if _is_older_nilrt():
+        raise salt.exceptions.CommandExecutionError('Not supported in this version.')
     changes = []
     if 'networking' in settings:
         if settings['networking'] in _CONFIG_TRUE:
@@ -469,6 +581,8 @@ def get_network_settings():
     .. code-block:: bash
         salt '*' ip.get_network_settings
     '''
+    if _is_older_nilrt():
+        raise salt.exceptions.CommandExecutionError('Not supported in this version.')
     settings = []
     networking = 'no' if _get_state() == 'offline' else "yes"
     settings.append('networking={0}'.format(networking))
@@ -485,6 +599,8 @@ def apply_network_settings(**settings):
     .. code-block:: bash
         salt '*' ip.apply_network_settings
     '''
+    if _is_older_nilrt():
+        raise salt.exceptions.CommandExecutionError('Not supported in this version.')
     if 'require_reboot' not in settings:
         settings['require_reboot'] = False
 

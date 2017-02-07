@@ -38,6 +38,16 @@ def __virtual__():
     return __virtualname__
 
 
+def _is_legacy_nilrt():
+    '''
+    If this is a legacy version of NILinuxRT, return True. Otherwise, return False.
+    '''
+    if ('NILinuxRT' in __grains__['os_family'] and
+            os.path.exists('/usr/local/natinst/bin/nisafemodeversion')):
+        return True
+    return False
+
+
 def _timedatectl():
     '''
     get the output of timedatectl
@@ -75,7 +85,7 @@ def _get_zone_sysconfig():
 
 def _get_zone_etc_localtime():
     tzfile = '/etc/localtime'
-    if 'NILinuxRT' in __grains__['os_family'] and salt.utils.which('nisafemodeversion'):
+    if _is_legacy_nilrt():
         tzfile = '/etc/natinst/share/localtime'
     tzdir = '/usr/share/zoneinfo/'
     tzdir_len = len(tzdir)
@@ -212,7 +222,7 @@ def set_zone(timezone):
     if not os.path.exists(zonepath):
         return 'Zone does not exist: {0}'.format(zonepath)
 
-    if 'NILinuxRT' in __grains__['os_family'] and salt.utils.which('nisafemodeversion'):
+    if _is_legacy_nilrt():
         os.unlink('/etc/natinst/share/localtime')
     elif os.path.exists('/etc/localtime'):
         os.unlink('/etc/localtime')
@@ -220,7 +230,7 @@ def set_zone(timezone):
     if 'Solaris' in __grains__['os_family']:
         __salt__['file.sed'](
             '/etc/default/init', '^TZ=.*', 'TZ={0}'.format(timezone))
-    elif 'NILinuxRT' in __grains__['os_family'] and salt.utils.which('nisafemodeversion'):
+    elif _is_legacy_nilrt():
         os.symlink(zonepath, '/etc/natinst/share/localtime')
     else:
         os.symlink(zonepath, '/etc/localtime')

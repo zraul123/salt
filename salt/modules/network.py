@@ -41,6 +41,16 @@ def __virtual__():
     return True
 
 
+def _is_legacy_nilrt():
+    '''
+    If this is a legacy version of NILinuxRT, return True. Otherwise, return False.
+    '''
+    if ('NILinuxRT' in __grains__['os_family'] and
+            os.path.exists('/usr/local/natinst/bin/nisafemodeversion')):
+        return True
+    return False
+
+
 def wol(mac, bcast='255.255.255.255', destport=9):
     '''
     Send Wake On Lan packet to a host
@@ -1331,6 +1341,11 @@ def mod_hostname(hostname):
     elif __grains__['os_family'] in ('Debian', 'NILinuxRT'):
         with salt.utils.fopen('/etc/hostname', 'w') as fh_:
             fh_.write(hostname + '\n')
+        if _is_legacy_nilrt():
+            cmd = 'grub-editenv - set hostname={0}'.format(hostname)
+            ret = __salt__['cmd.run_all'](cmd)
+            if ret['retcode'] != 0:
+                return False
     elif __grains__['os_family'] == 'OpenBSD':
         with salt.utils.fopen('/etc/myname', 'w') as fh_:
             fh_.write(hostname + '\n')

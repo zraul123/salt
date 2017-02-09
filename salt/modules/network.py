@@ -1051,7 +1051,7 @@ def mod_hostname(hostname):
         with salt.utils.fopen('/etc/hostname', 'w') as fh_:
             fh_.write(hostname + '\n')
         if _is_legacy_nilrt():
-            cmd = 'grub-editenv - set hostname={0}'.format(hostname)
+            cmd = '/usr/local/natinst/bin/nirtcfg --set section=SystemSettings,token=\'host_name\',value=\'{0}\''.format(hostname)
             ret = __salt__['cmd.run_all'](cmd)
             if ret['retcode'] != 0:
                 return False

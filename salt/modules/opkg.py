@@ -154,8 +154,10 @@ def refresh_db():
                                    python_shell=False)
     if call['retcode'] != 0:
         comment = ''
-        if 'stderr' in call:
+        if call['stderr']:
             comment += call['stderr']
+        else:
+            comment += call['stdout']
 
         raise CommandExecutionError(
             '{0}'.format(comment)
@@ -351,8 +353,11 @@ def install(name=None,
             output_loglevel='trace',
             python_shell=False
         )
-        if out['retcode'] != 0 and out['stderr']:
-            errors.append(out['stderr'])
+        if out['retcode'] != 0:
+            if out['stderr']:
+                errors.append(out['stderr'])
+            else:
+                errors.append(out['stdout'])
 
     __context__.pop('pkg.list_pkgs', None)
     new = list_pkgs()
@@ -409,8 +414,11 @@ def remove(name=None, pkgs=None, **kwargs):  # pylint: disable=unused-argument
         output_loglevel='trace',
         python_shell=False
     )
-    if out['retcode'] != 0 and out['stderr']:
-        errors = [out['stderr']]
+    if out['retcode'] != 0:
+        if out['stderr']:
+            errors = [out['stderr']]
+        else:
+            errors = [out['stdout']]
     else:
         errors = []
 
@@ -888,8 +896,10 @@ def info_installed(*names, **kwargs):
                                            python_shell=False)
             if call['retcode'] != 0:
                 comment = ''
-                if 'stderr' in call:
+                if call['stderr']:
                     comment += call['stderr']
+                else:
+                    comment += call['stdout']
 
                 raise CommandExecutionError(
                     '{0}'.format(comment)
@@ -903,8 +913,10 @@ def info_installed(*names, **kwargs):
                                        python_shell=False)
         if call['retcode'] != 0:
             comment = ''
-            if 'stderr' in call:
+            if call['stderr']:
                 comment += call['stderr']
+            else:
+                comment += call['stdout']
 
             raise CommandExecutionError(
                 '{0}'.format(comment)

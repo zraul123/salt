@@ -329,15 +329,16 @@ class TimezoneModuleTestCase(TestCase, LoaderModuleMockMixin):
     @patch('os.path.exists', MagicMock(return_value=True))
     @patch('os.unlink', MagicMock())
     @patch('os.symlink', MagicMock())
-    def test_set_hwclock_aix(self):
+    def test_set_hwclock_aix_nilinuxrt(self):
         '''
-        Test set hwclock on AIX
+        Test set hwclock on AIX and NILinuxRT
         :return:
         '''
-        with patch.dict(timezone.__grains__, {'os_family': ['AIX']}):
-            with self.assertRaises(SaltInvocationError):
-                assert timezone.set_hwclock('forty two')
-            assert timezone.set_hwclock('UTC')
+        for osfamily in ['AIX', 'NILinuxRT']:
+            with patch.dict(timezone.__grains__, {'os_family': osfamily}):
+                with self.assertRaises(SaltInvocationError):
+                    assert timezone.set_hwclock('forty two')
+                assert timezone.set_hwclock('UTC')
 
     @skipIf(salt.utils.is_windows(), 'os.symlink not available in Windows')
     @patch('salt.utils.which', MagicMock(return_value=False))

@@ -442,7 +442,7 @@ def set_dhcp_linklocal_all(interface):
 
     .. code-block:: bash
 
-        salt '*' ip.dhcp_linklocal_all interface-label
+        salt '*' ip.set_dhcp_linklocal_all interface-label
     '''
     if _is_older_nilrt():
         nirtcfg_cmd = salt.utils.which('nirtcfg')
@@ -538,7 +538,7 @@ def set_static_all(interface, address, netmask, gateway, domains):
 
     .. code-block:: bash
 
-        salt '*' ip.dhcp_linklocal_all interface-label address netmask gateway domains
+        salt '*' ip.set_static_all interface-label address netmask gateway domains
     '''
     validate, msg = _validate_ipv4([address, netmask, gateway])
     if not validate:

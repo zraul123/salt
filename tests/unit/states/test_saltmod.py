@@ -41,7 +41,7 @@ class SaltmodTestCase(TestCase, LoaderModuleMockMixin):
                     'transport': 'tcp'
                 },
                 '__salt__': {'saltutil.cmd': MagicMock()},
-                '__orchestration_jid__': salt.utils.jid.gen_jid()
+                '__orchestration_jid__': salt.utils.jid.gen_jid({})
             }
         }
 
@@ -222,7 +222,7 @@ class StatemodTests(TestCase, LoaderModuleMockMixin):
                     'extension_modules': os.path.join(self.tmp_cachedir, 'extmods'),
                 },
                 '__salt__': {'saltutil.cmd': MagicMock()},
-                '__orchestration_jid__': salt.utils.jid.gen_jid()
+                '__orchestration_jid__': salt.utils.jid.gen_jid({})
             }
         }
 

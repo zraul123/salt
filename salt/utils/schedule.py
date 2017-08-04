@@ -760,7 +760,7 @@ class Schedule(object):
                'fun': func,
                'fun_args': [],
                'schedule': data['name'],
-               'jid': salt.utils.jid.gen_jid()}
+               'jid': salt.utils.jid.gen_jid(self.opts)}
 
         if 'metadata' in data:
             if isinstance(data['metadata'], dict):

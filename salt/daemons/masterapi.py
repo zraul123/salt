@@ -754,7 +754,7 @@ class RemoteFuncs(object):
         Handle the return data sent from the minions
         '''
         # Generate EndTime
-        endtime = salt.utils.jid.jid_to_time(salt.utils.jid.gen_jid())
+        endtime = salt.utils.jid.jid_to_time(salt.utils.jid.gen_jid(self.opts))
         # If the return data is invalid, just ignore it
         if any(key not in load for key in ('return', 'jid', 'id')):
             return False
@@ -1133,7 +1133,7 @@ class LocalFuncs(object):
                                                 'user {1}.').format(auth_type, username)))
 
         # Authenticated. Do the job.
-        jid = salt.utils.jid.gen_jid()
+        jid = salt.utils.jid.gen_jid(self.opts)
         fun = load.pop('fun')
         tag = tagify(jid, prefix='wheel')
         data = {'fun': "wheel.{0}".format(fun),

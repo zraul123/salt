@@ -294,7 +294,7 @@ class SyncClientMixin(object):
         # this is not to clutter the output with the module loading
         # if we have a high debug level.
         self.mminion  # pylint: disable=W0104
-        jid = low.get('__jid__', salt.utils.jid.gen_jid())
+        jid = low.get('__jid__', salt.utils.jid.gen_jid(self.opts))
         tag = low.get('__tag__', salt.utils.event.tagify(jid, prefix=self.tag_prefix))
 
         data = {'fun': '{0}.{1}'.format(self.client, fun),
@@ -498,7 +498,7 @@ class AsyncClientMixin(object):
 
     def _gen_async_pub(self, jid=None):
         if jid is None:
-            jid = salt.utils.jid.gen_jid()
+            jid = salt.utils.jid.gen_jid(self.opts)
         tag = salt.utils.event.tagify(jid, prefix=self.tag_prefix)
         return {'tag': tag, 'jid': jid}
 

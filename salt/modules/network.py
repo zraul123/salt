@@ -1342,10 +1342,9 @@ def mod_hostname(hostname):
         with salt.utils.fopen('/etc/hostname', 'w') as fh_:
             fh_.write(hostname + '\n')
         if _is_legacy_nilrt():
-            cmd = 'grub-editenv - set hostname={0}'.format(hostname)
-            ret = __salt__['cmd.run_all'](cmd)
-            if ret['retcode'] != 0:
-                return False
+            nirtcfg_cmd = '/usr/local/natinst/bin/nirtcfg'
+            if __salt__['cmd.run_all'](nirtcfg_cmd + ' --set section=SystemSettings,token=\'Host_Name\',value=\'{0}\''.format(hostname))['retcode'] != 0:
+                raise CommandExecutionError('Couldn\'t set hostname to: {0}\n'.format(hostname))
     elif __grains__['os_family'] == 'OpenBSD':
         with salt.utils.fopen('/etc/myname', 'w') as fh_:
             fh_.write(hostname + '\n')

@@ -561,7 +561,7 @@ def set_static_all(interface, address, netmask, gateway, nameservers):
         if __salt__['cmd.run_all'](NIRTCFG_PATH + ' --set section={0},token=\'Gateway\',value=\'{1}\''.format(interface, gateway))['retcode'] != 0:
             raise salt.exceptions.CommandExecutionError('Couldn\'t set manual settings for interface: {0}\nError: could not set gateway\n'.format(interface))
         if nameservers:
-            if __salt__['cmd.run_all'](NIRTCFG_PATH + ' --set section={0},token=\'DNS_Address\',value=\'{1}\''.format(interface, domains[0]))['retcode'] != 0:
+            if __salt__['cmd.run_all'](NIRTCFG_PATH + ' --set section={0},token=\'DNS_Address\',value=\'{1}\''.format(interface, nameservers[0]))['retcode'] != 0:
                 raise salt.exceptions.CommandExecutionError('Couldn\'t set manual settings for interface: {0}\nError: could not set dns\n'.format(interface))
         disable(interface)
         enable(interface)

@@ -737,9 +737,15 @@ def grains(opts, force_refresh=False, proxy=None):
             # one parameter.  Then the grains can have access to the
             # proxymodule for retrieving information from the connected
             # device.
-            log.trace('Loading {0} grain'.format(key))
-            if funcs[key].__code__.co_argcount == 1:
-                ret = funcs[key](proxy)
+            log.trace('Loading %s grain', key)
+            parameters = list(funcs[key].__code__.co_varnames)
+            if funcs[key].__code__.co_argcount > 0:
+                kwargs = {}
+                if 'proxy' in parameters:
+                    kwargs['proxy'] = proxy
+                if 'grains' in parameters:
+                    kwargs['grains'] = grains_data
+                ret = funcs[key](**kwargs)
             else:
                 ret = funcs[key]()
         except Exception:

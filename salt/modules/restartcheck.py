@@ -310,7 +310,7 @@ def _kernel_versions_nilrt():
     '''
     kernel_versions = []
     kvregex = r'[0-9]+\.[0-9]+\.[0-9]+-rt'
-    kv_cmd = '/usr/bin/strings {0} | /usr/bin/awk \'$1 ~ /{1}/ {{print $1}}\' | /usr/bin/head -n1'
+    kv_cmd = 'strings {0} | awk \'$1 ~ /{1}/ {{print $1}}\' | head -n1'
 
     if _is_older_nilrt():
         if 'arm' in __grains__.get('cpuarch'):
@@ -320,9 +320,9 @@ def _kernel_versions_nilrt():
             itb_path = '/boot/linux_runmode.itb'
             compressed_kernel = '/var/volatile/tmp/uImage.gz'
             uncompressed_kernel = '/var/volatile/tmp/uImage'
-            __salt__['cmd.run']('/usr/bin/dumpimage -i {0} -T flat_dt -p0 kernel -o {1}'
+            __salt__['cmd.run']('dumpimage -i {0} -T flat_dt -p0 kernel -o {1}'
                                 .format(itb_path, compressed_kernel))
-            __salt__['cmd.run']('/usr/bin/gunzip {0}'.format(compressed_kernel))
+            __salt__['cmd.run']('gunzip {0}'.format(compressed_kernel))
             kernel = __salt__['cmd.shell'](kv_cmd.format(uncompressed_kernel, kvregex))
         else:
             # the kernel bzImage is copied to rootfs without package management or

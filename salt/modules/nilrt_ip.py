@@ -365,7 +365,7 @@ def _get_static_info(interface):
     }
     hwaddr_section_number = ''.join(data['hwaddr'].split(':'))
     if os.path.exists(INTERFACES_CONFIG):
-        information = _load_config(hwaddr_section_number, ['IPv4', 'Nameservers'], file=INTERFACES_CONFIG)
+        information = _load_config(hwaddr_section_number, ['IPv4', 'Nameservers'], filename=INTERFACES_CONFIG)
         if information['IPv4'] != '':
             ipv4_information = information['IPv4'].split('/')
             data['ipv4']['address'] = ipv4_information[0]
@@ -484,14 +484,12 @@ def _dict_to_string(dictionary):
 
 def _get_info(interface):
     '''
-    Return information about an interface even if it's not associated with a service.
+    Return information about an interface if it's associated with a service.
 
     :param interface: interface label
     '''
     service = _interface_to_service(interface.name)
-    if service is not None:
-        return _get_service_info(service)
-    return _get_static_info(interface)
+    return _get_service_info(service)
 
 
 def get_interfaces_details():
@@ -510,6 +508,8 @@ def get_interfaces_details():
     _interfaces = [interface for interface in pyiface.getIfaces() if interface.flags & IFF_LOOPBACK == 0]
     if __grains__['lsb_distrib_id'] == 'nilrt':
         return {'interfaces': list(map(_get_interface_info, _interfaces))}
+    # filter just the services
+    _interfaces = [interface for interface in _interfaces if _interface_to_service(interface.name) is not None]
     return {'interfaces': list(map(_get_info, _interfaces))}
 
 

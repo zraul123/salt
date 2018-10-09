@@ -109,8 +109,7 @@ SALT_ZEROMQ_REQS = os.path.join(os.path.abspath(SETUP_DIRNAME), 'requirements', 
 SALT_LONG_DESCRIPTION_FILE = os.path.join(os.path.abspath(SETUP_DIRNAME), 'README.rst')
 SALT_OSX_REQS = [
     os.path.join(os.path.abspath(SETUP_DIRNAME), 'pkg', 'osx', 'req.txt'),
-    os.path.join(os.path.abspath(SETUP_DIRNAME), 'pkg', 'osx', 'req_ext.txt'),
-    os.path.join(os.path.abspath(SETUP_DIRNAME), 'pkg', 'osx', 'req_pyobjc.txt')
+    os.path.join(os.path.abspath(SETUP_DIRNAME), 'pkg', 'osx', 'req_ext.txt')
 ]
 SALT_WINDOWS_REQS = [
     os.path.join(os.path.abspath(SETUP_DIRNAME), 'pkg', 'windows', 'req.txt'),
@@ -1028,7 +1027,8 @@ class SaltDistribution(distutils.dist.Distribution):
             return data_files
 
         if IS_WINDOWS_PLATFORM:
-            data_files[0][1].extend(['doc/man/salt-cp.1',
+            data_files[0][1].extend(['doc/man/salt-api.1',
+                                     'doc/man/salt-cp.1',
                                      'doc/man/salt-key.1',
                                      'doc/man/salt-minion.1',
                                      'doc/man/salt-syndic.1',
@@ -1085,7 +1085,8 @@ class SaltDistribution(distutils.dist.Distribution):
             return scripts
 
         if IS_WINDOWS_PLATFORM:
-            scripts.extend(['scripts/salt-cp',
+            scripts.extend(['scripts/salt-api',
+                            'scripts/salt-cp',
                             'scripts/salt-key',
                             'scripts/salt-minion',
                             'scripts/salt-syndic',
@@ -1121,7 +1122,8 @@ class SaltDistribution(distutils.dist.Distribution):
             return {'console_scripts': scripts}
 
         if IS_WINDOWS_PLATFORM:
-            scripts.extend(['salt-cp = salt.scripts:salt_cp',
+            scripts.extend(['salt-api = salt.scripts:salt_api',
+                            'salt-cp = salt.scripts:salt_cp',
                             'salt-key = salt.scripts:salt_key',
                             'salt-minion = salt.scripts:salt_minion',
                             'salt-syndic = salt.scripts:salt_syndic',

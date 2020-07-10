@@ -431,7 +431,7 @@ class DownloadWindowsDlls(Command):
                 furl = url.format(bits=platform_bits[:2], fname=fname)
                 fdest = dest.format(fname=fname)
                 if not os.path.exists(fdest):
-                    log.info('Downloading {0}.dll to {1} from {2}'.format(fname, fdest, furl))
+                    log.info('Downloading {0}.dll to {1} fDrom {2}'.format(fname, fdest, furl))
                     try:
                         import requests
                         from contextlib import closing
@@ -1030,6 +1030,7 @@ class SaltDistribution(distutils.dist.Distribution):
             data_files[0][1].extend(['doc/man/salt-api.1',
                                      'doc/man/salt-cp.1',
                                      'doc/man/salt-key.1',
+                                     'doc/man/salt-master.1',
                                      'doc/man/salt-minion.1',
                                      'doc/man/salt-syndic.1',
                                      'doc/man/salt-unity.1',
@@ -1088,6 +1089,7 @@ class SaltDistribution(distutils.dist.Distribution):
             scripts.extend(['scripts/salt-api',
                             'scripts/salt-cp',
                             'scripts/salt-key',
+                            'scripts/salt-master',
                             'scripts/salt-minion',
                             'scripts/salt-syndic',
                             'scripts/salt-unity',
@@ -1125,6 +1127,7 @@ class SaltDistribution(distutils.dist.Distribution):
             scripts.extend(['salt-api = salt.scripts:salt_api',
                             'salt-cp = salt.scripts:salt_cp',
                             'salt-key = salt.scripts:salt_key',
+                            'salt-master = salt.scripts:salt_master',
                             'salt-minion = salt.scripts:salt_minion',
                             'salt-syndic = salt.scripts:salt_syndic',
                             'salt-unity = salt.scripts:salt_unity',

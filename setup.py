@@ -1032,6 +1032,7 @@ class SaltDistribution(distutils.dist.Distribution):
                                      'doc/man/salt-key.1',
                                      'doc/man/salt-master.1',
                                      'doc/man/salt-minion.1',
+                                     'doc/man/salt.1',
                                      'doc/man/salt-syndic.1',
                                      'doc/man/salt-unity.1',
                                      'doc/man/spm.1'])
@@ -1086,7 +1087,8 @@ class SaltDistribution(distutils.dist.Distribution):
             return scripts
 
         if IS_WINDOWS_PLATFORM:
-            scripts.extend(['scripts/salt-api',
+            scripts.extend(['scripts/salt',
+                            'scripts/salt-api',
                             'scripts/salt-cp',
                             'scripts/salt-key',
                             'scripts/salt-master',
@@ -1124,7 +1126,8 @@ class SaltDistribution(distutils.dist.Distribution):
             return {'console_scripts': scripts}
 
         if IS_WINDOWS_PLATFORM:
-            scripts.extend(['salt-api = salt.scripts:salt_api',
+            scripts.extend(['salt = salt.scripts:salt_main',
+                            'salt-api = salt.scripts:salt_api',
                             'salt-cp = salt.scripts:salt_cp',
                             'salt-key = salt.scripts:salt_key',
                             'salt-master = salt.scripts:salt_master',

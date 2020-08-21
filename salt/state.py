@@ -1910,7 +1910,7 @@ class State(object):
             initial_ret={'full': state_func_name},
             expected_extra_kws=STATE_INTERNAL_KEYWORDS
         )
-        cdata['kwargs']['__pub_jid'] = self.jid
+
         inject_globals = {
             # Pass a copy of the running dictionary, the low state chunks and
             # the current state dictionaries.
@@ -1919,7 +1919,8 @@ class State(object):
             '__low__': immutabletypes.freeze(low),
             '__running__': immutabletypes.freeze(running) if running else {},
             '__instance_id__': self.instance_id,
-            '__lowstate__': immutabletypes.freeze(chunks) if chunks else {}
+            '__lowstate__': immutabletypes.freeze(chunks) if chunks else {},
+            '__jid__': self.jid
         }
 
         if '__env__' in low:

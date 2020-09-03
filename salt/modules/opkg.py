@@ -550,9 +550,13 @@ def install(name=None,
     if not cmds:
         return {}
 
+    feeds_updated_status = {}
     if refreshdb:
-        refresh_db()
-
+        feeds_updated_status = refresh_db()
+    failed_to_update_feeds = [feed for feed in feeds_updated_status if not feeds_updated_status[feed]]
+    feed_update_error = None
+    if failed_to_update_feeds:
+        feed_update_error = 'Error getting repos: {0}'.format(', '.join(failed_to_update_feeds))
     errors = []
     is_testmode = _is_testmode(**kwargs)
     test_packages = {}
@@ -593,6 +597,8 @@ def install(name=None,
     rs_result = _get_restartcheck_result(errors)
 
     if errors:
+        if feed_update_error:
+            errors.append(feed_update_error)
         raise CommandExecutionError(
             'Problem encountered installing package(s)',
             info={'errors': errors, 'changes': ret}

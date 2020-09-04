@@ -1562,10 +1562,11 @@ def mod_repo(repo, **kwargs):
     uri = ''
     if 'uri' in kwargs:
         uri = kwargs['uri']
+    allow_renaming = kwargs.get('allow_renaming', False)
 
     for repository in repos:
         source = repos[repository][0]
-        if source['name'] == repo:
+        if source['name'] == repo or (uri and source['uri'] == uri and allow_renaming):
             found = True
             repostr = ''
             if 'enabled' in kwargs and not kwargs['enabled']:
@@ -1583,7 +1584,7 @@ def mod_repo(repo, **kwargs):
             trusted = kwargs.get('trusted')
             repostr = _set_trusted_option_if_needed(repostr, trusted) if trusted is not None else \
                 _set_trusted_option_if_needed(repostr, source.get('trusted'))
-            _mod_repo_in_file(repo, repostr, source['file'])
+            _mod_repo_in_file(source['name'], repostr, source['file'])
         elif uri and source['uri'] == uri:
             raise CommandExecutionError(
                 'Repository \'{0}\' already exists as \'{1}\'.'.format(uri, source['name']))

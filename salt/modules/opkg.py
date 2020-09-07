@@ -524,8 +524,17 @@ def install(name=None,
                 else:
                     to_install.append(pkgname)
             else:
-                pkgstr = '{0}={1}'.format(pkgname, version_num)
                 cver = old.get(pkgname, '')
+                version_conditions = [x.strip() for x in version_num.split(',')]
+                for version_condition in version_conditions:
+                    (version_string, version_operator, operator_specified) = _get_version_info(version_condition)
+                    if operator_specified:
+                        # Version conditions are sent to the solver as install commands
+                        pkgstr = '{0}{1}{2}'.format(pkgname, version_operator, version_string)
+                        to_install.append(pkgstr)
+                        cmd_prefix.append('--force-downgrade')
+                    else:
+                pkgstr = '{0}={1}'.format(pkgname, version_num)
                 if reinstall and cver and salt.utils.versions.compare(
                         ver1=version_num,
                         oper='==',
@@ -613,6 +622,25 @@ def install(name=None,
         )
 
     return ret
+
+
+def _get_version_info(version_string):
+    '''
+    Detects if the version has comparison operators.
+    Supported version operators are: >>, <<, >=, <=, !=
+    Returns:
+        Tuple: Containing versionString, operatorString, operatorSpecified
+    '''
+    versionString = version_string
+    operatorString = ''
+    operatorSpecified = False
+    versionRegex = r'(<=>|!=|>=|<=|>>|<<|<>|>|<|=)\s?((?:[0-9]+:)?[0-9][a-zA-Z0-9+~.-]*)'
+    match = re.search(versionRegex, version_string)
+    if match:
+        operatorSpecified = True
+        versionString = match.group(2)
+        operatorString = match.group(1)
+    return (versionString, operatorString, operatorSpecified)
 
 
 def _parse_reported_packages_from_remove_output(output):

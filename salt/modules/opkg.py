@@ -534,25 +534,25 @@ def install(name=None,
                         to_install.append(pkgstr)
                         cmd_prefix.append('--force-downgrade')
                     else:
-                pkgstr = '{0}={1}'.format(pkgname, version_num)
-                if reinstall and cver and salt.utils.versions.compare(
-                        ver1=version_num,
-                        oper='==',
-                        ver2=cver,
-                        cmp_func=version_cmp):
-                    to_reinstall.append(pkgstr)
-                elif not cver or salt.utils.versions.compare(
-                        ver1=version_num,
-                        oper='>=',
-                        ver2=cver,
-                        cmp_func=version_cmp):
-                    to_install.append(pkgstr)
-                else:
-                    if not kwargs.get('only_upgrade', False):
-                        to_downgrade.append(pkgstr)
-                    else:
-                        # This should cause the command to fail.
-                        to_install.append(pkgstr)
+                        pkgstr = '{0}={1}'.format(pkgname, version_num)
+                        if reinstall and cver and salt.utils.versions.compare(
+                                ver1=version_num,
+                                oper='==',
+                                ver2=cver,
+                                cmp_func=version_cmp):
+                            to_reinstall.append(pkgstr)
+                        elif not cver or salt.utils.versions.compare(
+                                ver1=version_num,
+                                oper='>=',
+                                ver2=cver,
+                                cmp_func=version_cmp):
+                            to_install.append(pkgstr)
+                        else:
+                            if not kwargs.get('only_upgrade', False):
+                                to_downgrade.append(pkgstr)
+                            else:
+                                # This should cause the command to fail.
+                                to_install.append(pkgstr)
 
     cmds = _build_install_command_list(cmd_prefix, to_install, to_downgrade, to_reinstall)
 

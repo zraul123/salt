@@ -532,7 +532,6 @@ def install(name=None,
                         # Version conditions are sent to the solver as install commands
                         pkgstr = '{0}{1}{2}'.format(pkgname, version_operator, version_string)
                         to_install.append(pkgstr)
-                        cmd_prefix.append('--force-downgrade')
                     else:
                         pkgstr = '{0}={1}'.format(pkgname, version_num)
                         if reinstall and cver and salt.utils.versions.compare(
